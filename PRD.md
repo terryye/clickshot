@@ -71,10 +71,10 @@ clipboard for immediate pasting.
   appears on all monitors; the size label is drawn only on the display owning the
   selection.
 - Two selectable styles (see Settings):
-  - **Dim surroundings** (default): the whole screen is dimmed with the selection
-    shown as a clear hole.
-  - **macOS-style selection overlay**: the screen is left undimmed and only the
-    selected area is tinted, matching the system screenshot look.
+  - **macOS-style selection overlay** (default): the screen is left undimmed and
+    only the selected area is tinted, matching the system screenshot look.
+  - **Dim surroundings**: the whole screen is dimmed with the selection shown as a
+    clear hole.
 
 ### 5. Screen capture
 - Uses **ScreenCaptureKit** (`SCScreenshotManager`).

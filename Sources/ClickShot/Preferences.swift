@@ -45,11 +45,11 @@ final class Preferences {
         set { defaults.set(newValue, forKey: Key.dragThreshold) }
     }
 
-    /// When true, the overlay matches the macOS screenshot look: only the selected
-    /// area is tinted, leaving the rest of the screen undimmed. When false
-    /// (default), the surroundings are dimmed and the selection is a clear hole.
+    /// When true (default), the overlay matches the macOS screenshot look: only the
+    /// selected area is tinted, leaving the rest of the screen undimmed. When false,
+    /// the surroundings are dimmed and the selection is a clear hole.
     var macOSOverlayStyle: Bool {
-        get { defaults.bool(forKey: Key.macOSOverlayStyle) }
+        get { defaults.object(forKey: Key.macOSOverlayStyle) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Key.macOSOverlayStyle) }
     }
 
