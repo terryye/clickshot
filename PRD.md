@@ -82,9 +82,14 @@ clipboard for immediate pasting.
   for broad app compatibility. Paste with ⌘V anywhere.
 
 ### 7. Menu-bar presence & settings
-- Always-visible status-bar item (`viewfinder` SF Symbol).
+- Always-visible status-bar item using the custom "Capture C" mark (an open ring
+  with a crosshair click-target), drawn in code as a template image so it tints
+  for light/dark menu bars. The matching Dock/Finder app icon ships as
+  `AppIcon.icns`. Logo sources live in `logo/`.
 - Menu: **Settings…**, **Quit** (a Launch-at-Login menu toggle is also available).
 - **Settings window** contains:
+  - **App header**: the app icon, name, and version — the in-app home for the icon
+    since the app has no Dock presence.
   - **Capture triggers**: a "Middle mouse button" checkbox and a "Keyboard shortcut"
     recorder (shows the shortcut or "Not set") with a "Clear" button.
   - **macOS-style selection overlay** checkbox (overlay style; see feature 4).

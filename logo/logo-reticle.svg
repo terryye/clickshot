@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+  <!-- mouse silhouette -->
+  <rect x="6" y="2.5" width="12" height="19" rx="6" />
+  <!-- scroll-wheel as crosshair reticle -->
+  <circle cx="12" cy="8" r="2.25" />
+  <path d="M12 4.25v1.5M12 10.5v1.5M8.25 8h1.5M14.5 8h1.5" />
+</svg>

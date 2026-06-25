@@ -12,7 +12,7 @@ final class SettingsWindowController: NSWindowController {
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 420),
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 490),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -39,6 +39,11 @@ final class SettingsWindowController: NSWindowController {
         stack.spacing = 14
         stack.edgeInsets = NSEdgeInsets(top: 20, left: 20, bottom: 20, right: 20)
         stack.translatesAutoresizingMaskIntoConstraints = false
+
+        // App identity header (icon + name + version) — the in-app home for the
+        // app icon, since an LSUIElement app has no Dock presence.
+        stack.addArrangedSubview(appHeader())
+        stack.addArrangedSubview(separator())
 
         // Triggers — the middle button and a keyboard shortcut are independent;
         // either or both can be active.
@@ -126,6 +131,34 @@ final class SettingsWindowController: NSWindowController {
     }
 
     // MARK: - Builders
+
+    private func appHeader() -> NSStackView {
+        let icon = NSImageView()
+        icon.image = NSApp.applicationIconImage   // resolves CFBundleIconFile (AppIcon.icns)
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.widthAnchor.constraint(equalToConstant: 56).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: 56).isActive = true
+
+        let name = NSTextField(labelWithString: "ClickShot")
+        name.font = .systemFont(ofSize: 17, weight: .semibold)
+
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let versionLabel = NSTextField(labelWithString: version.isEmpty ? "" : "Version \(version)")
+        versionLabel.font = .systemFont(ofSize: 11)
+        versionLabel.textColor = .secondaryLabelColor
+
+        let titleStack = NSStackView(views: [name, versionLabel])
+        titleStack.orientation = .vertical
+        titleStack.alignment = .leading
+        titleStack.spacing = 2
+
+        let header = NSStackView(views: [icon, titleStack])
+        header.orientation = .horizontal
+        header.alignment = .centerY
+        header.spacing = 12
+        return header
+    }
 
     private func sectionLabel(_ text: String) -> NSTextField {
         let label = NSTextField(labelWithString: text)

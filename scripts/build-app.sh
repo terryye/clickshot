@@ -56,6 +56,13 @@ cp "$BIN_PATH" "$APP_DIR/Contents/MacOS/$APP_NAME"
 cp "$ROOT/Info.plist" "$APP_DIR/Contents/Info.plist"
 printf 'APPL????' > "$APP_DIR/Contents/PkgInfo"
 
+# App icon (Dock / Finder). Referenced by CFBundleIconFile in Info.plist.
+if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
+    cp "$ROOT/Resources/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
+else
+    echo "warning: Resources/AppIcon.icns missing — run ./scripts/make-appicon.sh" >&2
+fi
+
 # --- Sign --------------------------------------------------------------------
 if [[ "$IDENTITY" == "-" ]]; then
     echo "==> Ad-hoc code signing (no certificate found)"
@@ -71,6 +78,14 @@ fi
 
 echo "==> Verifying signature"
 codesign --verify --strict --verbose=2 "$APP_DIR"
+
+# Re-register with LaunchServices so Finder/Dock pick up the current icon.
+# Rebuilding in place doesn't invalidate the icon cache, so a fresh .icns
+# otherwise keeps showing the stale (often generic) icon. See TECH_DECISIONS.md.
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [[ -x "$LSREGISTER" ]]; then
+    "$LSREGISTER" -f "$APP_DIR" || true
+fi
 
 echo ""
 echo "Built:    $APP_DIR"

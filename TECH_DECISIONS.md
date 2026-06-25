@@ -56,3 +56,24 @@ re-litigated later. See `PRD.md` for the product/feature spec.
   secure timestamp). TCC keys off the designated requirement, so a stable signature
   keeps Accessibility/Screen Recording grants across rebuilds. Note: a team's
   **first** notarization can take hours to ~3 days (later ones are minutes).
+
+## Branding / icons
+
+- **Menu-bar glyph is drawn in code, not bundled as a raster.** The build is a
+  hand-assembled bundle with no asset catalog, so `StatusBarController.makeMenuBarIcon()`
+  renders the "Capture C" mark via `NSBezierPath` into a template `NSImage`. This
+  stays crisp at any menu-bar size/scale and AppKit tints it for light/dark. The
+  vector source of truth is `logo/logo-capture-c.svg`; the code mirrors its 24-unit
+  grid (open ring with a ±38° gap on the right + a crosshair plus).
+- **App icon is generated, then committed.** `scripts/make-appicon.sh` draws the
+  same mark on a macOS squircle tile (Core Graphics, matching
+  `logo/logo-capture-c-icon.svg`), emits every iconset size, and packs
+  `Resources/AppIcon.icns` with `iconutil`. `build-app.sh` copies it into the
+  bundle and `Info.plist` references it via `CFBundleIconFile`. Re-run the script
+  when the design changes. (Drawn in code rather than rasterizing the SVG because
+  stock macOS has no reliable SVG→PNG CLI that preserves alpha/gradients.)
+- **`build-app.sh` re-registers the bundle with `lsregister -f` after signing.**
+  Rebuilding `ClickShot.app` in place does not invalidate the LaunchServices /
+  Finder icon cache — if the bundle was first registered without an icon, Finder
+  keeps drawing the generic app icon even after a valid `.icns` is added. Forcing
+  re-registration each build makes the current icon show without a Finder restart.

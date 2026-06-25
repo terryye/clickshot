@@ -10,11 +10,46 @@ final class StatusBarController {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "viewfinder", accessibilityDescription: "ClickShot")
-            button.image?.isTemplate = true
+            button.image = StatusBarController.makeMenuBarIcon()
         }
 
         statusItem.menu = makeMenu()
+    }
+
+    /// The "Capture C" mark — an open ring with a crosshair click-target — drawn
+    /// as a template image so the menu bar tints it for light/dark automatically.
+    /// Mirrors `logo/logo-capture-c.svg` (a 24-unit grid scaled into 18pt).
+    private static func makeMenuBarIcon() -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let image = NSImage(size: size, flipped: false) { _ in
+            let scale: CGFloat = 18.0 / 24.0          // map the 24-unit SVG grid to 18pt
+            let center = NSPoint(x: 12 * scale, y: 12 * scale)
+            let radius: CGFloat = 8 * scale
+
+            // Open "C" ring: gap of ±38° centred on the right (3 o'clock).
+            let ring = NSBezierPath()
+            ring.appendArc(withCenter: center, radius: radius, startAngle: 38, endAngle: 322)
+            ring.lineWidth = 2 * scale
+            ring.lineCapStyle = .round
+            ring.lineJoinStyle = .round
+
+            // Crosshair click-target (a plus spanning ±2.5 units around centre).
+            let arm: CGFloat = 2.5 * scale
+            let cross = NSBezierPath()
+            cross.move(to: NSPoint(x: center.x, y: center.y - arm))
+            cross.line(to: NSPoint(x: center.x, y: center.y + arm))
+            cross.move(to: NSPoint(x: center.x - arm, y: center.y))
+            cross.line(to: NSPoint(x: center.x + arm, y: center.y))
+            cross.lineWidth = 2 * scale
+            cross.lineCapStyle = .round
+
+            NSColor.black.setStroke()
+            ring.stroke()
+            cross.stroke()
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 
     private func makeMenu() -> NSMenu {

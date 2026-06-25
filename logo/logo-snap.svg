@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+  <!-- mouse silhouette -->
+  <rect x="7" y="5" width="10" height="15" rx="5" />
+  <!-- scroll wheel -->
+  <path d="M12 8v2.5" />
+  <!-- crosshair arms framing the target -->
+  <path d="M12 2.5V5M12 22v-2M2.5 12H6M21.5 12H18" />
+</svg>
