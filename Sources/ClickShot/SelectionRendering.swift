@@ -17,13 +17,30 @@ enum SelectionRendering {
         NSScreen.screens.reduce(CGRect.null) { $0.union($1.frame) }
     }
 
+    /// The display a selection should be captured from: the screen sharing the
+    /// largest area with `rect`. Using overlap area (rather than the selection's
+    /// center) is robust when the center falls in a bezel gap between monitors.
+    /// Falls back to the screen containing the center, then `NSScreen.main`.
+    static func targetScreen(for rect: CGRect) -> NSScreen? {
+        let screens = NSScreen.screens
+        let best = screens.max { a, b in
+            a.frame.intersection(rect).area < b.frame.intersection(rect).area
+        }
+        if let best, best.frame.intersection(rect).area > 0 { return best }
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        return screens.first { $0.frame.contains(center) } ?? NSScreen.main
+    }
+
     /// Draws the selection according to `style`, plus its border and size label.
     ///
     /// - Parameters:
     ///   - selectionRect: selection in AppKit global coordinates.
     ///   - windowOrigin: the overlay window's origin in global coordinates.
     ///   - style: whether to dim the surroundings or tint the selection.
-    static func draw(in ctx: CGContext, bounds: CGRect, selectionRect: CGRect, windowOrigin: CGPoint, style: OverlayStyle) {
+    ///   - drawsLabel: whether this overlay should draw the size/hint label. With
+    ///     one overlay window per display, only the display owning the selection
+    ///     draws the label so it isn't duplicated on every monitor.
+    static func draw(in ctx: CGContext, bounds: CGRect, selectionRect: CGRect, windowOrigin: CGPoint, style: OverlayStyle, drawsLabel: Bool = true) {
         let local = CGRect(
             x: selectionRect.origin.x - windowOrigin.x,
             y: selectionRect.origin.y - windowOrigin.y,
@@ -49,7 +66,9 @@ enum SelectionRendering {
         ctx.setLineWidth(1.5)
         ctx.stroke(local.insetBy(dx: 0.75, dy: 0.75))
 
-        drawSizeLabel(selectionRect: selectionRect, local: local, bounds: bounds)
+        if drawsLabel {
+            drawSizeLabel(selectionRect: selectionRect, local: local, bounds: bounds)
+        }
     }
 
     private static func drawSizeLabel(selectionRect: CGRect, local: CGRect, bounds: CGRect) {
@@ -87,4 +106,9 @@ enum SelectionRendering {
 
         label.draw(at: CGPoint(x: box.minX + padding, y: box.minY + padding / 2))
     }
+}
+
+private extension CGRect {
+    /// Area of the rectangle, or 0 for a null/empty rect.
+    var area: CGFloat { isNull ? 0 : width * height }
 }

@@ -8,15 +8,24 @@ final class ScreenCapturer {
     /// and returns an `NSImage` sized in points. The completion runs on the main
     /// queue. `nil` indicates failure (e.g. missing permission).
     func capture(appKitRect rect: CGRect, completion: @escaping (NSImage?) -> Void) {
-        guard let screen = screenContaining(rect),
+        guard let screen = SelectionRendering.targetScreen(for: rect),
               let displayID = screen.displayID else {
             DispatchQueue.main.async { completion(nil) }
             return
         }
         let scale = screen.backingScaleFactor
 
+        // Clamp the selection to the target display: a region spanning multiple
+        // monitors is captured only from the display it overlaps most (the part on
+        // other displays is dropped — spanning capture is a documented non-goal).
+        let clamped = rect.intersection(screen.frame)
+        guard !clamped.isNull, clamped.width >= 1, clamped.height >= 1 else {
+            DispatchQueue.main.async { completion(nil) }
+            return
+        }
+
         Task {
-            let image = await self.captureImage(displayID: displayID, screenFrame: screen.frame, selection: rect, scale: scale)
+            let image = await self.captureImage(displayID: displayID, screenFrame: screen.frame, selection: clamped, scale: scale)
             DispatchQueue.main.async { completion(image) }
         }
     }
@@ -61,11 +70,6 @@ final class ScreenCapturer {
         }
     }
 
-    /// The screen whose frame contains the center of the selection.
-    private func screenContaining(_ rect: CGRect) -> NSScreen? {
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        return NSScreen.screens.first { $0.frame.contains(center) } ?? NSScreen.main
-    }
 }
 
 private extension NSScreen {

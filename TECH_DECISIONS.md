@@ -48,7 +48,34 @@ re-litigated later. See `PRD.md` for the product/feature spec.
 
 - **Coordinates:** work in AppKit global (bottom-left) internally; convert to the
   target display's backing pixels with a Y-flip for the ScreenCaptureKit crop.
-- Capture targets the display containing the **center** of the selection.
+- **Capture targets the display with the largest overlap** with the selection
+  (`SelectionRendering.targetScreen`), not the one under the selection's center.
+  Overlap-area is robust when the center lands in a bezel gap between unaligned
+  monitors. The selection is then **clamped to that display's frame** before the
+  crop, so a region straddling two monitors is captured from one (spanning capture
+  is a non-goal; the off-display part is dropped).
+
+## Multi-display
+
+- **One overlay window per `NSScreen`, never a single union-spanning window.** With
+  "Displays have separate Spaces" enabled (the macOS default) a window is clipped to
+  one display's Space and never appears on the others — so a union-frame overlay left
+  every secondary monitor undimmed and non-interactive. Both overlays
+  (`SelectionOverlayController`, `CrosshairSelectionController`) now create a
+  borderless window per display.
+- **Shared selection state for the interactive crosshair.** With per-display windows
+  the selection can't live in a single view: the press may land on one monitor and
+  the drag cross onto another. State (start/current point, phase) lives in
+  `CrosshairSelectionController`; each view forwards mouse points and reads back the
+  rect to draw. macOS keeps delivering a drag to the window that got the mouse-down,
+  which converts `locationInWindow` to global coords correctly even off its own
+  display, so cross-monitor drags track. Only the display owning the selection draws
+  the size label.
+- **Compare screens by frame, not `NSScreen` identity.** `NSScreen` uses identity
+  `==` and `NSScreen.screens` may return fresh instances per call, so comparing
+  `NSScreen` objects (or `window.screen`) is unreliable. Screen frames are unique and
+  non-overlapping in the global coordinate space, so frame equality identifies a
+  display dependably.
 
 ## Signing & permissions
 
