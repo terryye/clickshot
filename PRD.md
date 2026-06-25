@@ -24,8 +24,9 @@ clipboard for immediate pasting.
 - Saving screenshots to files (clipboard-only for now).
 - Annotation / markup, scrolling capture, window/element capture, timed capture.
 - Video/GIF recording.
-- Capturing a region that spans multiple displays (capture targets the display
-  under the selection's center).
+- Capturing a region that spans multiple displays. The overlay appears on every
+  monitor and selection works on any of them, but a region straddling two displays
+  is captured only from the display it overlaps most (the rest is dropped).
 
 ---
 
@@ -65,7 +66,10 @@ clipboard for immediate pasting.
 ### 4. Selection overlay
 - Free-rectangle selection (any width/height).
 - Accent-colored border and a live label showing the **W × H** size plus a hint:
-  "Release to copy to clipboard · ⌘V to paste · Esc to cancel". Spans all displays.
+  "Release to copy to clipboard · ⌘V to paste · Esc to cancel". A separate overlay
+  is shown on every display (one borderless window per screen), so the dim/selection
+  appears on all monitors; the size label is drawn only on the display owning the
+  selection.
 - Two selectable styles (see Settings):
   - **Dim surroundings** (default): the whole screen is dimmed with the selection
     shown as a clear hole.
@@ -75,7 +79,8 @@ clipboard for immediate pasting.
 ### 5. Screen capture
 - Uses **ScreenCaptureKit** (`SCScreenshotManager`).
 - Correctly handles **Retina scaling** and the AppKit↔Quartz Y-axis flip.
-- Targets the display containing the center of the selection (multi-monitor aware).
+- Multi-monitor aware: targets the display with the largest overlap with the
+  selection and clamps the region to that display before cropping.
 
 ### 6. Clipboard output
 - Captured image is written to the general pasteboard as both **PNG** and **TIFF**
