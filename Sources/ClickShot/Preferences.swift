@@ -13,6 +13,7 @@ final class Preferences {
     private enum Key {
         static let trigger = "trigger"
         static let dragThreshold = "dragThreshold"
+        static let macOSOverlayStyle = "macOSOverlayStyle"
     }
 
     private init() {}
@@ -40,5 +41,18 @@ final class Preferences {
             return value > 0 ? value : 5
         }
         set { defaults.set(newValue, forKey: Key.dragThreshold) }
+    }
+
+    /// When true, the overlay matches the macOS screenshot look: only the selected
+    /// area is tinted, leaving the rest of the screen undimmed. When false
+    /// (default), the surroundings are dimmed and the selection is a clear hole.
+    var macOSOverlayStyle: Bool {
+        get { defaults.bool(forKey: Key.macOSOverlayStyle) }
+        set { defaults.set(newValue, forKey: Key.macOSOverlayStyle) }
+    }
+
+    /// The overlay style derived from `macOSOverlayStyle`.
+    var overlayStyle: SelectionRendering.OverlayStyle {
+        macOSOverlayStyle ? .highlightSelection : .dimSurroundings
     }
 }

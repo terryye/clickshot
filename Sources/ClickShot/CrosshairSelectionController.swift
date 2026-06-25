@@ -125,16 +125,20 @@ final class CrosshairOverlayView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         if phase == .awaitingPress {
-            // Faint dim + a hint so it's obvious the mode is armed.
-            ctx.setFillColor(NSColor.black.withAlphaComponent(0.12).cgColor)
-            ctx.fill(bounds)
+            // In the dim style, faintly dim the screen so it's obvious the mode is
+            // armed. In the macOS style, leave the screen untouched (just the hint).
+            if Preferences.shared.overlayStyle == .dimSurroundings {
+                ctx.setFillColor(NSColor.black.withAlphaComponent(0.12).cgColor)
+                ctx.fill(bounds)
+            }
             drawHint()
             return
         }
         SelectionRendering.draw(
             in: ctx, bounds: bounds,
             selectionRect: selectionRect(),
-            windowOrigin: windowOrigin, dim: true
+            windowOrigin: windowOrigin,
+            style: Preferences.shared.overlayStyle
         )
     }
 

@@ -59,7 +59,8 @@ final class OverlayView: NSView {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         SelectionRendering.draw(
             in: ctx, bounds: bounds,
-            selectionRect: selectionRect, windowOrigin: windowOrigin, dim: true
+            selectionRect: selectionRect, windowOrigin: windowOrigin,
+            style: Preferences.shared.overlayStyle
         )
     }
 }

@@ -4,13 +4,14 @@ import AppKit
 /// status of the two required permissions.
 final class SettingsWindowController: NSWindowController {
     private var launchCheckbox: NSButton!
+    private var overlayStyleCheckbox: NSButton!
     private var recorder: RecorderButton!
     private var accessibilityRow: PermissionRow!
     private var screenRow: PermissionRow!
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 320),
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 420),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -47,6 +48,14 @@ final class SettingsWindowController: NSWindowController {
 
         stack.addArrangedSubview(separator())
 
+        // Overlay appearance
+        stack.addArrangedSubview(sectionLabel("Overlay"))
+        overlayStyleCheckbox = NSButton(checkboxWithTitle: "macOS-style selection overlay", target: self, action: #selector(toggleOverlayStyle))
+        stack.addArrangedSubview(overlayStyleCheckbox)
+        stack.addArrangedSubview(hintLabel("Tint only the selected area instead of dimming the rest of the screen."))
+
+        stack.addArrangedSubview(separator())
+
         // Launch at login
         launchCheckbox = NSButton(checkboxWithTitle: "Launch at login", target: self, action: #selector(toggleLaunch))
         stack.addArrangedSubview(launchCheckbox)
@@ -75,6 +84,7 @@ final class SettingsWindowController: NSWindowController {
     private func refresh() {
         recorder.title = "  " + Preferences.shared.trigger.displayName + "  "
         launchCheckbox.state = LoginItemManager.isEnabled ? .on : .off
+        overlayStyleCheckbox.state = Preferences.shared.macOSOverlayStyle ? .on : .off
         accessibilityRow.setGranted(Permissions.hasAccessibility)
         screenRow.setGranted(Permissions.hasScreenRecording)
     }
@@ -82,6 +92,10 @@ final class SettingsWindowController: NSWindowController {
     @objc private func toggleLaunch() {
         LoginItemManager.setEnabled(launchCheckbox.state == .on)
         refresh()
+    }
+
+    @objc private func toggleOverlayStyle() {
+        Preferences.shared.macOSOverlayStyle = overlayStyleCheckbox.state == .on
     }
 
     // MARK: - Builders

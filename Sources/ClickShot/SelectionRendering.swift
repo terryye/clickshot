@@ -3,19 +3,27 @@ import AppKit
 /// Shared drawing for the selection overlays (both the press-and-drag overlay and
 /// the interactive crosshair overlay).
 enum SelectionRendering {
+    /// How the area outside vs. inside the selection is rendered.
+    enum OverlayStyle {
+        /// Dim everything except the selection, which is shown as a clear hole.
+        case dimSurroundings
+        /// macOS screenshot look: leave the rest of the screen undimmed and tint
+        /// only the selected area.
+        case highlightSelection
+    }
+
     /// The smallest rectangle (in AppKit global coordinates) containing all screens.
     static func unionFrame() -> CGRect {
         NSScreen.screens.reduce(CGRect.null) { $0.union($1.frame) }
     }
 
-    /// Draws the dimmed backdrop and, if a selection exists, the clear selection
-    /// window, its border, and a size label.
+    /// Draws the selection according to `style`, plus its border and size label.
     ///
     /// - Parameters:
     ///   - selectionRect: selection in AppKit global coordinates.
     ///   - windowOrigin: the overlay window's origin in global coordinates.
-    ///   - dim: whether to dim the area outside the selection.
-    static func draw(in ctx: CGContext, bounds: CGRect, selectionRect: CGRect, windowOrigin: CGPoint, dim: Bool) {
+    ///   - style: whether to dim the surroundings or tint the selection.
+    static func draw(in ctx: CGContext, bounds: CGRect, selectionRect: CGRect, windowOrigin: CGPoint, style: OverlayStyle) {
         let local = CGRect(
             x: selectionRect.origin.x - windowOrigin.x,
             y: selectionRect.origin.y - windowOrigin.y,
@@ -23,10 +31,16 @@ enum SelectionRendering {
             height: selectionRect.height
         )
 
-        if dim {
+        switch style {
+        case .dimSurroundings:
             ctx.setFillColor(NSColor.black.withAlphaComponent(0.30).cgColor)
             ctx.fill(bounds)
             ctx.clear(local)
+        case .highlightSelection:
+            // No backdrop dim; a faint tint marks the selected area like macOS.
+            guard selectionRect.width >= 1, selectionRect.height >= 1 else { break }
+            ctx.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.18).cgColor)
+            ctx.fill(local)
         }
 
         guard selectionRect.width >= 1, selectionRect.height >= 1 else { return }

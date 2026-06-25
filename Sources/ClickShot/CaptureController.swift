@@ -130,10 +130,14 @@ final class CaptureController {
             if distance >= threshold {
                 state = .dragging
                 overlay.show()
+                // Activating makes our cursor change take effect over the app
+                // under the pointer; then the real cursor becomes a crosshair.
+                NSApp.activate(ignoringOtherApps: true)
             }
         }
         if state == .dragging {
             overlay.update(selection: selectionRect())
+            NSCursor.crosshair.set()  // Re-assert each drag so it doesn't revert.
         }
     }
 
@@ -149,6 +153,7 @@ final class CaptureController {
     private func finishCapture() {
         let rect = selectionRect()
         overlay.hide()
+        NSCursor.arrow.set()
         capture(rect)
     }
 
@@ -166,6 +171,7 @@ final class CaptureController {
 
     private func cancelGesture() {
         overlay.hide()
+        NSCursor.arrow.set()
         state = .idle
     }
 
