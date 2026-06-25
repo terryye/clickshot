@@ -1,16 +1,16 @@
 # CLAUDE.md — working notes for ClickShot
 
 ClickShot is a native macOS menu-bar screenshot tool (Swift + AppKit +
-ScreenCaptureKit). See `PRD.md` for the full product/feature/architecture spec.
+ScreenCaptureKit). See `PRD.md` for the product/feature spec and
+`TECH_DECISIONS.md` for technical decisions.
 
 ## Conventions (follow these every time)
 
 - **Always update `PRD.md` as part of any commit that changes behavior.** Keep its
   feature list and interaction table in sync with the code.
-- **Record important technical solutions in `PRD.md`** (the "Technical solutions &
-  key decisions" section): when a non-obvious approach is chosen (a workaround, an
-  OS quirk, a tradeoff), add a short entry explaining *what* and *why* so it isn't
-  re-litigated later.
+- **Record important technical solutions in `TECH_DECISIONS.md`:** when a
+  non-obvious approach is chosen (a workaround, an OS quirk, a tradeoff), add a
+  short entry explaining *what* and *why* so it isn't re-litigated later.
 - Commit messages end with the `Co-Authored-By` trailer; tag releases `vX.Y` with
   an annotated tag.
 
