@@ -85,9 +85,20 @@ final class CrosshairOverlayView: NSView {
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    // Keep the crosshair cursor across the whole overlay.
-    override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .crosshair)
+    // A tracking area covering the whole overlay keeps the crosshair cursor in
+    // place (cursor rects alone are unreliable on a borderless window).
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(
+            rect: bounds,
+            options: [.activeAlways, .mouseMoved, .cursorUpdate, .inVisibleRect],
+            owner: self
+        ))
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.crosshair.set()
     }
 
     // MARK: Mouse
@@ -100,7 +111,12 @@ final class CrosshairOverlayView: NSView {
         needsDisplay = true
     }
 
+    override func mouseMoved(with event: NSEvent) {
+        NSCursor.crosshair.set()
+    }
+
     override func mouseDragged(with event: NSEvent) {
+        NSCursor.crosshair.set()
         guard phase == .selecting else { return }
         currentPoint = globalPoint(of: event)
         needsDisplay = true
@@ -124,10 +140,19 @@ final class CrosshairOverlayView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let style = Preferences.shared.overlayStyle
+
+        // The window must have non-transparent pixels everywhere or mouse-downs (and
+        // cursor updates) pass through fully clear regions. The dim style already
+        // fills the whole window; the macOS style would otherwise be clear, so paint
+        // an imperceptible base layer to keep the overlay interactive everywhere.
+        if style == .highlightSelection {
+            ctx.setFillColor(NSColor.black.withAlphaComponent(0.01).cgColor)
+            ctx.fill(bounds)
+        }
+
         if phase == .awaitingPress {
-            // In the dim style, faintly dim the screen so it's obvious the mode is
-            // armed. In the macOS style, leave the screen untouched (just the hint).
-            if Preferences.shared.overlayStyle == .dimSurroundings {
+            if style == .dimSurroundings {
                 ctx.setFillColor(NSColor.black.withAlphaComponent(0.12).cgColor)
                 ctx.fill(bounds)
             }
@@ -138,7 +163,7 @@ final class CrosshairOverlayView: NSView {
             in: ctx, bounds: bounds,
             selectionRect: selectionRect(),
             windowOrigin: windowOrigin,
-            style: Preferences.shared.overlayStyle
+            style: style
         )
     }
 

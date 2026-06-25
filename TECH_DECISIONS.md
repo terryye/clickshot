@@ -6,6 +6,14 @@ re-litigated later. See `PRD.md` for the product/feature spec.
 
 ## Input handling
 
+- **Two independent triggers (middle button on/off + optional keyboard shortcut),
+  routed by event category.** Key events drive the keyboard/crosshair path; mouse
+  events drive the middle-button drag path; both can be active at once. They are
+  made **mutually exclusive while mid-gesture**: mouse events are ignored while a
+  keyboard crosshair session is active (`crosshair.isActive`), and the hotkey is
+  ignored while a mouse gesture is in progress (mouse `state != .idle`). The mouse
+  trigger is intentionally limited to the **middle button** — left/right/other are
+  poor choices that would collide with normal use.
 - **Mouse triggers observe, never swallow, button events.** Consuming the
   `otherMouseDown` at the session event tap stops the window server from
   generating `otherMouseDragged` events and freezes the cursor — so the drag
@@ -16,6 +24,12 @@ re-litigated later. See `PRD.md` for the product/feature spec.
   crosshair cursor and the press-drag-release selection. A borderless `NSWindow`
   cannot become key by default, so `KeyableBorderlessWindow` overrides
   `canBecomeKey`/`canBecomeMain` (needed to receive Esc and own the drag).
+- **The interactive overlay must paint non-transparent pixels everywhere.** A fully
+  clear region of the crosshair window lets mouse-downs and cursor updates pass
+  through to the app below — so selection only started over the (drawn) hint banner
+  and the crosshair cursor reverted. In the macOS overlay style we paint an
+  imperceptible base fill (alpha ≈ 0.01) across the whole window, and use a
+  `cursorUpdate` tracking area to keep the crosshair cursor from reverting.
 - **Hotkey matching** compares the recorded key code + the relevant modifier subset
   (⌘⌥⌃⇧) from the live `CGEventFlags`; the hotkey's own key events are swallowed so
   the character isn't typed.

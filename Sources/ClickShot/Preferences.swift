@@ -1,36 +1,38 @@
 import Foundation
 
-/// Persists user settings in `UserDefaults` and broadcasts changes so live
-/// components (such as the event tap) can react.
+/// Persists user settings in `UserDefaults`.
 final class Preferences {
     static let shared = Preferences()
-
-    /// Posted whenever the trigger configuration changes.
-    static let triggerDidChange = Notification.Name("ClickShot.triggerDidChange")
 
     private let defaults = UserDefaults.standard
 
     private enum Key {
-        static let trigger = "trigger"
+        static let middleButtonEnabled = "middleButtonEnabled"
+        static let keyboardShortcut = "keyboardShortcut"
         static let dragThreshold = "dragThreshold"
         static let macOSOverlayStyle = "macOSOverlayStyle"
     }
 
     private init() {}
 
-    /// The configured capture trigger. Defaults to the middle mouse button.
-    var trigger: TriggerConfig {
+    /// Whether the middle mouse button acts as a capture trigger. Default: on.
+    var middleButtonEnabled: Bool {
+        get { defaults.object(forKey: Key.middleButtonEnabled) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.middleButtonEnabled) }
+    }
+
+    /// The configured keyboard shortcut trigger, or `nil` if none is set.
+    var keyboardShortcut: KeyboardShortcut? {
         get {
-            guard let data = defaults.data(forKey: Key.trigger),
-                  let decoded = try? JSONDecoder().decode(TriggerConfig.self, from: data)
-            else { return .middleMouseButton }
-            return decoded
+            guard let data = defaults.data(forKey: Key.keyboardShortcut) else { return nil }
+            return try? JSONDecoder().decode(KeyboardShortcut.self, from: data)
         }
         set {
-            if let data = try? JSONEncoder().encode(newValue) {
-                defaults.set(data, forKey: Key.trigger)
+            if let newValue, let data = try? JSONEncoder().encode(newValue) {
+                defaults.set(data, forKey: Key.keyboardShortcut)
+            } else {
+                defaults.removeObject(forKey: Key.keyboardShortcut)
             }
-            NotificationCenter.default.post(name: Preferences.triggerDidChange, object: nil)
         }
     }
 

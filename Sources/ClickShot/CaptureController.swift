@@ -42,15 +42,23 @@ final class CaptureController {
         eventTap.stop()
     }
 
-    private var trigger: TriggerConfig { Preferences.shared.trigger }
+    private var middleEnabled: Bool { Preferences.shared.middleButtonEnabled }
+    private var keyboardShortcut: KeyboardShortcut? { Preferences.shared.keyboardShortcut }
     private var threshold: CGFloat { Preferences.shared.dragThreshold }
+
+    /// The middle mouse button's `buttonNumber`.
+    private static let middleButton = 2
 
     // MARK: - Event handling
 
     /// Returns true to swallow the event.
+    ///
+    /// The two triggers are mutually exclusive while one is mid-gesture: a keyboard
+    /// crosshair session disables the middle button, and a middle-button drag
+    /// disables the hotkey.
     private func handle(type: CGEventType, event: CGEvent) -> Bool {
-        // Esc cancels an in-progress gesture (and is swallowed so it doesn't
-        // reach other apps).
+        // Esc cancels an in-progress mouse gesture (swallowed so it doesn't reach
+        // other apps). The crosshair window handles its own Esc.
         if type == .keyDown,
            event.getIntegerValueField(.keyboardEventKeycode) == Int64(kVK_Escape),
            state != .idle {
@@ -58,12 +66,16 @@ final class CaptureController {
             return true
         }
 
-        switch trigger {
-        case .mouseButton(let number):
-            return handleMouseTrigger(buttonNumber: number, type: type, event: event)
-        case .keyboard(let keyCode, let modifiers):
-            return handleKeyboardTrigger(keyCode: keyCode, modifiers: modifiers, type: type, event: event)
+        if type == .keyDown || type == .keyUp {
+            // Keyboard trigger — disabled while a middle-button drag is in progress.
+            guard let shortcut = keyboardShortcut, state == .idle else { return false }
+            return handleKeyboardTrigger(shortcut: shortcut, type: type, event: event)
         }
+
+        // Mouse trigger — disabled while a keyboard crosshair session is active
+        // (let those events flow to the crosshair window).
+        guard !crosshair.isActive, middleEnabled else { return false }
+        return handleMouseTrigger(buttonNumber: CaptureController.middleButton, type: type, event: event)
     }
 
     // MARK: Mouse-button trigger (observe only — never swallow)
@@ -98,8 +110,8 @@ final class CaptureController {
 
     // MARK: Keyboard trigger (crosshair click-move-click, like the system tool)
 
-    private func handleKeyboardTrigger(keyCode: Int, modifiers: UInt, type: CGEventType, event: CGEvent) -> Bool {
-        let isHotkey = event.getIntegerValueField(.keyboardEventKeycode) == Int64(keyCode)
+    private func handleKeyboardTrigger(shortcut: KeyboardShortcut, type: CGEventType, event: CGEvent) -> Bool {
+        let isHotkey = event.getIntegerValueField(.keyboardEventKeycode) == Int64(shortcut.keyCode)
 
         // While the crosshair overlay is up it handles its own clicks, movement,
         // and Esc. We only swallow the hotkey's own key events so the character
@@ -109,7 +121,7 @@ final class CaptureController {
         }
 
         // Tap the hotkey → enter crosshair selection mode.
-        if type == .keyDown, isHotkey, matchesModifiers(modifiers, flags: event.flags) {
+        if type == .keyDown, isHotkey, matchesModifiers(shortcut.modifiers, flags: event.flags) {
             crosshair.begin { [weak self] rect in
                 if let rect { self?.capture(rect) }
             }

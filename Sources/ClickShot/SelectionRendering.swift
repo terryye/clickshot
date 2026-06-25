@@ -53,14 +53,26 @@ enum SelectionRendering {
     }
 
     private static func drawSizeLabel(selectionRect: CGRect, local: CGRect, bounds: CGRect) {
-        let text = "\(Int(selectionRect.width)) × \(Int(selectionRect.height))"
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
+        let sizeAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold),
             .foregroundColor: NSColor.white,
         ]
-        let size = text.size(withAttributes: attributes)
+        let hintAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 12),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.75),
+        ]
+        let label = NSMutableAttributedString(
+            string: "\(Int(selectionRect.width)) × \(Int(selectionRect.height))",
+            attributes: sizeAttrs
+        )
+        label.append(NSAttributedString(
+            string: "   Release to copy to clipboard · ⌘V to paste · Esc to cancel",
+            attributes: hintAttrs
+        ))
+
+        let textSize = label.size()
         let padding: CGFloat = 6
-        let boxSize = CGSize(width: size.width + padding * 2, height: size.height + padding)
+        let boxSize = CGSize(width: textSize.width + padding * 2, height: textSize.height + padding)
 
         var boxOrigin = CGPoint(x: local.minX, y: local.maxY + 6)
         if boxOrigin.y + boxSize.height > bounds.maxY {
@@ -73,9 +85,6 @@ enum SelectionRendering {
         NSColor.black.withAlphaComponent(0.65).setFill()
         path.fill()
 
-        text.draw(
-            at: CGPoint(x: box.minX + padding, y: box.minY + padding / 2),
-            withAttributes: attributes
-        )
+        label.draw(at: CGPoint(x: box.minX + padding, y: box.minY + padding / 2))
     }
 }

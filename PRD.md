@@ -31,12 +31,16 @@ clipboard for immediate pasting.
 
 ## Features
 
-### 1. Configurable capture trigger
-- The trigger can be **any mouse button** (default: **middle button**) **or** a
-  **keyboard shortcut** with modifiers.
-- Recorded via a "press to record" control in Settings; the next mouse button or
-  key combination pressed becomes the trigger.
-- Persisted in `UserDefaults`; changes take effect immediately (no relaunch).
+### 1. Configurable capture triggers
+- Two **independent** triggers, either or both active at once:
+  - **Middle mouse button** — a simple on/off toggle (default: **on**). No other
+    mouse buttons are offered (they're poor choices).
+  - **Keyboard shortcut** — an optional recordable hotkey (default: **none**); a
+    "Clear" button disables it.
+- Recorded via a "press to record" control in Settings; persisted in `UserDefaults`;
+  changes take effect immediately (no relaunch).
+- **Mutual exclusion while mid-gesture:** during a keyboard crosshair session the
+  middle button is ignored, and during a middle-button drag the hotkey is ignored.
 
 ### 2. Mouse-button trigger — press-and-drag capture
 - **Press and hold** the trigger button, **drag** past the **drag threshold**
@@ -60,7 +64,8 @@ clipboard for immediate pasting.
 
 ### 4. Selection overlay
 - Free-rectangle selection (any width/height).
-- Accent-colored border and a live **W × H** size label; spans all connected displays.
+- Accent-colored border and a live label showing the **W × H** size plus a hint:
+  "Release to copy to clipboard · ⌘V to paste · Esc to cancel". Spans all displays.
 - Two selectable styles (see Settings):
   - **Dim surroundings** (default): the whole screen is dimmed with the selection
     shown as a clear hole.
@@ -80,8 +85,8 @@ clipboard for immediate pasting.
 - Always-visible status-bar item (`viewfinder` SF Symbol).
 - Menu: **Settings…**, **Quit** (a Launch-at-Login menu toggle is also available).
 - **Settings window** contains:
-  - **Capture trigger** recorder (shows current trigger, e.g. "Middle Mouse Button"
-    or "⌃⌥S").
+  - **Capture triggers**: a "Middle mouse button" checkbox and a "Keyboard shortcut"
+    recorder (shows the shortcut or "Not set") with a "Clear" button.
   - **macOS-style selection overlay** checkbox (overlay style; see feature 4).
   - **Launch at login** checkbox.
   - **Permissions** status rows for Accessibility and Screen Recording, each with
@@ -107,9 +112,9 @@ clipboard for immediate pasting.
 
 ## Interaction summary
 
-| Trigger type | Activate | Select | Finish | Cancel |
-|--------------|----------|--------|--------|--------|
-| Mouse button (default: middle) | Press & hold the button | Drag past 5 px | Release the button | Esc |
+| Trigger | Activate | Select | Finish | Cancel |
+|---------|----------|--------|--------|--------|
+| Middle mouse button | Press & hold the middle button | Drag past 5 px | Release the button | Esc |
 | Keyboard shortcut | Tap the hotkey | Hold left button & drag | Release left button | Esc |
 
 ---

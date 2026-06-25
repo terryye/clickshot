@@ -1,41 +1,16 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// The user-configurable trigger that arms a capture gesture.
-///
-/// A trigger is either a mouse button (default: the middle button) or a keyboard
-/// key combined with modifier flags. In both cases the gesture works the same way:
-/// press-and-hold to arm, drag past the threshold to start selecting, release to
-/// capture.
-enum TriggerConfig: Codable, Equatable {
-    /// A mouse button identified by its `buttonNumber` (2 == middle button).
-    case mouseButton(Int)
-    /// A keyboard key identified by its virtual key code, plus modifier flags
-    /// stored as the raw value of `NSEvent.ModifierFlags`.
-    case keyboard(keyCode: Int, modifiers: UInt)
+/// A keyboard shortcut used as a capture trigger: a virtual key code plus modifier
+/// flags (stored as the raw value of `NSEvent.ModifierFlags`).
+struct KeyboardShortcut: Codable, Equatable {
+    let keyCode: Int
+    let modifiers: UInt
 
-    static let middleMouseButton = TriggerConfig.mouseButton(2)
-
-    /// Human-readable label shown in the settings UI.
+    /// Human-readable label shown in the settings UI, e.g. "⌃⌥S".
     var displayName: String {
-        switch self {
-        case .mouseButton(let number):
-            switch number {
-            case 0: return "Left Mouse Button"
-            case 1: return "Right Mouse Button"
-            case 2: return "Middle Mouse Button"
-            default: return "Mouse Button \(number + 1)"
-            }
-        case .keyboard(let keyCode, let modifiers):
-            let flags = NSEvent.ModifierFlags(rawValue: modifiers)
-            return TriggerConfig.modifierString(flags) + TriggerConfig.keyName(for: keyCode)
-        }
-    }
-
-    /// True when this trigger is driven by a mouse button.
-    var isMouse: Bool {
-        if case .mouseButton = self { return true }
-        return false
+        let flags = NSEvent.ModifierFlags(rawValue: modifiers)
+        return KeyboardShortcut.modifierString(flags) + KeyboardShortcut.keyName(for: keyCode)
     }
 
     private static func modifierString(_ flags: NSEvent.ModifierFlags) -> String {
@@ -66,7 +41,7 @@ enum TriggerConfig: Codable, Equatable {
         case kVK_F11: return "F11"
         case kVK_F12: return "F12"
         default:
-            if let char = TriggerConfig.character(for: keyCode) {
+            if let char = KeyboardShortcut.character(for: keyCode) {
                 return char.uppercased()
             }
             return "Key \(keyCode)"

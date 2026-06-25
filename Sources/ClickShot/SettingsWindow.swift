@@ -5,6 +5,7 @@ import AppKit
 final class SettingsWindowController: NSWindowController {
     private var launchCheckbox: NSButton!
     private var overlayStyleCheckbox: NSButton!
+    private var middleButtonCheckbox: NSButton!
     private var recorder: RecorderButton!
     private var accessibilityRow: PermissionRow!
     private var screenRow: PermissionRow!
@@ -39,12 +40,27 @@ final class SettingsWindowController: NSWindowController {
         stack.edgeInsets = NSEdgeInsets(top: 20, left: 20, bottom: 20, right: 20)
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        // Trigger
-        stack.addArrangedSubview(sectionLabel("Capture trigger"))
+        // Triggers — the middle button and a keyboard shortcut are independent;
+        // either or both can be active.
+        stack.addArrangedSubview(sectionLabel("Capture triggers"))
+
+        middleButtonCheckbox = NSButton(checkboxWithTitle: "Middle mouse button", target: self, action: #selector(toggleMiddleButton))
+        stack.addArrangedSubview(middleButtonCheckbox)
+        stack.addArrangedSubview(hintLabel("Hold the middle button and drag to select an area; release to copy."))
+
         recorder = RecorderButton()
         recorder.onChange = { [weak self] in self?.refresh() }
-        stack.addArrangedSubview(recorder)
-        stack.addArrangedSubview(hintLabel("Click the button, then press a mouse button or keyboard shortcut. Hold it and drag to select an area; release to copy the screenshot."))
+        let clearButton = NSButton(title: "Clear", target: self, action: #selector(clearShortcut))
+        clearButton.bezelStyle = .rounded
+        clearButton.controlSize = .small
+        let shortcutRow = NSStackView(views: [
+            NSTextField(labelWithString: "Keyboard shortcut:"), recorder, clearButton,
+        ])
+        shortcutRow.orientation = .horizontal
+        shortcutRow.spacing = 8
+        shortcutRow.alignment = .centerY
+        stack.addArrangedSubview(shortcutRow)
+        stack.addArrangedSubview(hintLabel("Tap the shortcut, then hold the left button and drag to select; release to copy."))
 
         stack.addArrangedSubview(separator())
 
@@ -82,11 +98,22 @@ final class SettingsWindowController: NSWindowController {
     }
 
     private func refresh() {
-        recorder.title = "  " + Preferences.shared.trigger.displayName + "  "
+        let shortcut = Preferences.shared.keyboardShortcut
+        recorder.title = "  " + (shortcut?.displayName ?? "Not set") + "  "
+        middleButtonCheckbox.state = Preferences.shared.middleButtonEnabled ? .on : .off
         launchCheckbox.state = LoginItemManager.isEnabled ? .on : .off
         overlayStyleCheckbox.state = Preferences.shared.macOSOverlayStyle ? .on : .off
         accessibilityRow.setGranted(Permissions.hasAccessibility)
         screenRow.setGranted(Permissions.hasScreenRecording)
+    }
+
+    @objc private func toggleMiddleButton() {
+        Preferences.shared.middleButtonEnabled = middleButtonCheckbox.state == .on
+    }
+
+    @objc private func clearShortcut() {
+        Preferences.shared.keyboardShortcut = nil
+        refresh()
     }
 
     @objc private func toggleLaunch() {
@@ -123,7 +150,7 @@ final class SettingsWindowController: NSWindowController {
     }
 }
 
-/// A button that records the next mouse button or keyboard shortcut as the trigger.
+/// A button that records the next keyboard shortcut as the keyboard trigger.
 final class RecorderButton: NSButton {
     var onChange: (() -> Void)?
     private var monitor: Any?
@@ -142,32 +169,22 @@ final class RecorderButton: NSButton {
     @objc private func beginRecording() {
         guard !recording else { return }
         recording = true
-        title = "  Press a key or mouse button…  "
+        title = "  Press a shortcut…  "
 
-        let mask: NSEvent.EventTypeMask = [
-            .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown,
-        ]
-        monitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
             self?.capture(event)
             return nil  // Swallow while recording.
         }
     }
 
     private func capture(_ event: NSEvent) {
-        switch event.type {
-        case .keyDown:
-            // Esc cancels recording without changing the trigger.
-            if event.keyCode == 53 {
-                finish()
-                return
-            }
-            let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift]).rawValue
-            Preferences.shared.trigger = .keyboard(keyCode: Int(event.keyCode), modifiers: modifiers)
-        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
-            Preferences.shared.trigger = .mouseButton(event.buttonNumber)
-        default:
-            break
+        // Esc cancels recording without changing the shortcut.
+        if event.keyCode == 53 {
+            finish()
+            return
         }
+        let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift]).rawValue
+        Preferences.shared.keyboardShortcut = KeyboardShortcut(keyCode: Int(event.keyCode), modifiers: modifiers)
         finish()
     }
 
