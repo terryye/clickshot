@@ -37,7 +37,7 @@ final class Preferences {
     var dragThreshold: CGFloat {
         get {
             let value = defaults.double(forKey: Key.dragThreshold)
-            return value > 0 ? value : 20
+            return value > 0 ? value : 5
         }
         set { defaults.set(newValue, forKey: Key.dragThreshold) }
     }

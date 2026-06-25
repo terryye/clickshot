@@ -25,12 +25,12 @@ final class StatusBarController {
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
-
+/*
         let launch = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         launch.target = self
         menu.addItem(launch)
         launchAtLoginItem = launch
-
+*/
         menu.addItem(.separator())
 
         let quit = NSMenuItem(title: "Quit ClickShot", action: #selector(quit), keyEquivalent: "q")

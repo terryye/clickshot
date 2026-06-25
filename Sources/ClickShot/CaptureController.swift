@@ -22,6 +22,7 @@ final class CaptureController {
 
     private let eventTap = EventTapManager()
     private let overlay = SelectionOverlayController()
+    private let crosshair = CrosshairSelectionController()
     private let capturer = ScreenCapturer()
 
     private var state: State = .idle
@@ -95,34 +96,27 @@ final class CaptureController {
         return false
     }
 
-    // MARK: Keyboard trigger
+    // MARK: Keyboard trigger (crosshair click-move-click, like the system tool)
 
     private func handleKeyboardTrigger(keyCode: Int, modifiers: UInt, type: CGEventType, event: CGEvent) -> Bool {
-        if type == .keyDown,
-           state == .idle,
-           event.getIntegerValueField(.keyboardEventKeycode) == Int64(keyCode),
-           matchesModifiers(modifiers, flags: event.flags) {
-            startPoint = NSEvent.mouseLocation
-            currentPoint = startPoint
-            state = .armed
-            return true  // Swallow the hotkey so it doesn't type/act elsewhere.
+        let isHotkey = event.getIntegerValueField(.keyboardEventKeycode) == Int64(keyCode)
+
+        // While the crosshair overlay is up it handles its own clicks, movement,
+        // and Esc. We only swallow the hotkey's own key events so the character
+        // isn't typed; everything else flows through to the overlay window.
+        if crosshair.isActive {
+            return (type == .keyDown || type == .keyUp) && isHotkey
         }
 
-        guard state != .idle else { return false }
-
-        // The mouse button isn't held during a keyboard gesture, so we follow
-        // plain pointer movement. Observe but never swallow it.
-        if type == .mouseMoved || type == .leftMouseDragged
-            || type == .rightMouseDragged || type == .otherMouseDragged {
-            updateDrag(to: NSEvent.mouseLocation)
-            return false
-        }
-
-        if type == .keyUp, event.getIntegerValueField(.keyboardEventKeycode) == Int64(keyCode) {
-            if state == .dragging { finishCapture() }
-            state = .idle
+        // Tap the hotkey → enter crosshair selection mode.
+        if type == .keyDown, isHotkey, matchesModifiers(modifiers, flags: event.flags) {
+            crosshair.begin { [weak self] rect in
+                if let rect { self?.capture(rect) }
+            }
             return true
         }
+
+        if type == .keyUp, isHotkey { return true }  // Swallow the release too.
 
         return false
     }
@@ -155,6 +149,11 @@ final class CaptureController {
     private func finishCapture() {
         let rect = selectionRect()
         overlay.hide()
+        capture(rect)
+    }
+
+    /// Captures the given AppKit-global rect to the clipboard.
+    private func capture(_ rect: CGRect) {
         guard rect.width >= 1, rect.height >= 1 else { return }
         capturer.capture(appKitRect: rect) { image in
             guard let image else {
