@@ -43,7 +43,7 @@ clipboard for immediate pasting.
 - **Mutual exclusion while mid-gesture:** during a keyboard crosshair session the
   middle button is ignored, and during a middle-button drag the hotkey is ignored.
 
-### 2. Mouse-button trigger — press-and-drag capture
+### 2. Mouse-button trigger — press-and-drag or press-and-hold capture
 - **Press and hold** the trigger button, **drag** past the **drag threshold**
   (default **5 px**), and a dimmed selection overlay appears.
 - The selection rectangle tracks the pointer live, showing a size label (W × H).
@@ -52,8 +52,13 @@ clipboard for immediate pasting.
 - **Release** the button → the selected region is captured to the clipboard.
 - **Esc** during the drag cancels without capturing.
 - Events are **observed, not swallowed**, so the window server keeps generating
-  drag events and the cursor stays live (a normal click that never crosses the
-  threshold does nothing special).
+  drag events and the cursor stays live.
+- **Press and hold** the button **still** (never crossing the threshold) for
+  **2 seconds** → the **whole display under the pointer** is captured to the
+  clipboard as soon as the 2 s elapse; the later release does nothing. A shorter
+  click does nothing special, so normal middle-clicks are unaffected.
+- The gesture **never changes focus**: ClickShot is not activated, so the focused
+  window stays focused and open menus/popovers stay open for the capture.
 
 ### 3. Keyboard-shortcut trigger — crosshair capture (macOS-style)
 - **Tap** the configured hotkey → ClickShot enters crosshair mode: the screen
@@ -83,8 +88,9 @@ clipboard for immediate pasting.
   selection and clamps the region to that display before cropping.
 
 ### 6. Clipboard output
-- Captured image is written to the general pasteboard as both **PNG** and **TIFF**
-  for broad app compatibility. Paste with ⌘V anywhere.
+- Captured image is written to the general pasteboard as a **single item** offering
+  both **PNG** and **TIFF** for broad app compatibility, so it pastes as exactly one
+  image. Paste with ⌘V anywhere.
 
 ### 7. Menu-bar presence & settings
 - Always-visible status-bar item using the custom "Capture C" mark (an open ring
@@ -125,6 +131,7 @@ clipboard for immediate pasting.
 | Trigger | Activate | Select | Finish | Cancel |
 |---------|----------|--------|--------|--------|
 | Middle mouse button | Press & hold the middle button | Drag past 5 px | Release the button | Esc |
+| Middle mouse button (hold) | Press & hold the middle button | — (whole display under pointer) | Hold still for 2 s | Release or drag before 2 s |
 | Keyboard shortcut | Tap the hotkey | Hold left button & drag | Release left button | Esc |
 
 ---

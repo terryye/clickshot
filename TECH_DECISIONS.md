@@ -19,6 +19,13 @@ re-litigated later. See `PRD.md` for the product/feature spec.
   generating `otherMouseDragged` events and freezes the cursor — so the drag
   could never start. We let the down/drag/up flow through and only watch them.
   Side effect: the app under the pointer also receives the click (acceptable).
+- **Middle-button hold (2 s, no drag) captures the display under the pointer.**
+  A timer starts on mouse-down while `armed`; crossing the drag threshold, releasing,
+  or Esc cancels it. When it fires, the `NSScreen` containing the pointer is
+  captured and the gesture returns to `idle` (the eventual release is ignored). A
+  hold rather than a plain click, because button events are observed (not
+  swallowed): every ordinary middle-click (e.g. opening a link in a new tab) would
+  otherwise also take a screenshot and overwrite the clipboard.
 - **Keyboard triggers use an interactive key window**, not the passive tap-driven
   overlay: tapping the hotkey opens `CrosshairSelectionController`, which owns the
   crosshair cursor and the press-drag-release selection. A borderless `NSWindow`
@@ -38,11 +45,16 @@ re-litigated later. See `PRD.md` for the product/feature spec.
 
 ## Cursor
 
-- **Crosshair cursor during a mouse drag** is achieved by activating the app
-  (`NSApp.activate`) on crossing the threshold and calling `NSCursor.crosshair.set()`
-  on each drag event. `CGDisplayHideCursor`/`NSCursor` only affect the foreground
-  app, so a background `.set()` is overridden by the app that owns the pointer;
-  drawing a fake cursor instead lagged and left the real arrow visible.
+- **Crosshair cursor during a mouse drag without activating the app.** `NSCursor`
+  changes from a background app are normally overridden by the app that owns the
+  pointer. We used to `NSApp.activate` on crossing the threshold, but that stole
+  focus from the user's window (and dismisses its open menus/popovers, which are
+  often what's being captured). Instead, `BackgroundCursor` sets the window
+  server's private `SetsCursorInBackground` connection property at startup, and we
+  call `NSCursor.crosshair.set()` on each drag event while staying inactive.
+  Symbols are resolved via `dlsym` so a future OS that removes them only loses the
+  crosshair. Drawing a fake cursor instead lagged and left the real arrow visible.
+  (The keyboard crosshair still activates: it needs a key window for Esc/clicks.)
 
 ## Capture
 
@@ -54,6 +66,13 @@ re-litigated later. See `PRD.md` for the product/feature spec.
   monitors. The selection is then **clamped to that display's frame** before the
   crop, so a region straddling two monitors is captured from one (spanning capture
   is a non-goal; the off-display part is dropped).
+
+## Clipboard
+
+- **One pasteboard item with multiple types, never multiple items.** PNG and TIFF
+  go on the same `NSPasteboardItem`. Writing them as separate items (e.g.
+  `writeObjects([pngItem, nsImage])`) makes apps that accept multi-item pastes
+  (Slack, Notes, browsers) insert the screenshot twice.
 
 ## Multi-display
 

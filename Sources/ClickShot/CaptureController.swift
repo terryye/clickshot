@@ -7,7 +7,8 @@ import Carbon.HIToolbox
 ///
 /// Gesture lifecycle:
 ///   idle → (trigger pressed) → armed → (moved past threshold) → dragging
-///        → (trigger released) → capture → idle
+///        → (trigger released) → capture region → idle
+///   armed → (held still for `holdDuration`) → capture full screen → idle
 ///
 /// For a mouse-button trigger we deliberately *observe* (never swallow) the
 /// button events: swallowing the button-down stops the window server from
@@ -28,6 +29,12 @@ final class CaptureController {
     private var state: State = .idle
     private var startPoint: CGPoint = .zero    // AppKit global coords (bottom-left).
     private var currentPoint: CGPoint = .zero
+    /// Pending full-screen capture for a press held without dragging.
+    private var holdTimer: DispatchWorkItem?
+
+    /// How long the middle button must be held (without dragging) to capture the
+    /// whole display under the pointer.
+    private static let holdDuration: TimeInterval = 2
 
     /// Installs the global event tap. Returns false if Accessibility is missing.
     @discardableResult
@@ -35,6 +42,7 @@ final class CaptureController {
         eventTap.onEvent = { [weak self] type, event in
             self?.handle(type: type, event: event) ?? false
         }
+        BackgroundCursor.enable()
         return eventTap.start()
     }
 
@@ -89,6 +97,7 @@ final class CaptureController {
             startPoint = NSEvent.mouseLocation
             currentPoint = startPoint
             state = .armed
+            scheduleHoldCapture()
             return false
         }
 
@@ -100,6 +109,7 @@ final class CaptureController {
         }
 
         if isUp, eventButtonNumber(type: type, event: event) == buttonNumber {
+            cancelHoldCapture()  // Released before the hold completed: plain click.
             if state == .dragging { finishCapture() }
             state = .idle
             return false
@@ -140,11 +150,12 @@ final class CaptureController {
         if state == .armed {
             let distance = hypot(point.x - startPoint.x, point.y - startPoint.y)
             if distance >= threshold {
+                cancelHoldCapture()
                 state = .dragging
+                // Deliberately no `NSApp.activate`: that would steal focus from
+                // the app under the pointer (and dismiss its open menus/popovers).
+                // `BackgroundCursor` lets the crosshair below apply while inactive.
                 overlay.show()
-                // Activating makes our cursor change take effect over the app
-                // under the pointer; then the real cursor becomes a crosshair.
-                NSApp.activate(ignoringOtherApps: true)
             }
         }
         if state == .dragging {
@@ -169,6 +180,32 @@ final class CaptureController {
         capture(rect)
     }
 
+    /// Holding the button still for `holdDuration` captures the whole display
+    /// under the pointer. The gesture then ends; the eventual release is ignored.
+    private func scheduleHoldCapture() {
+        cancelHoldCapture()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, self.state == .armed else { return }
+            self.holdTimer = nil
+            self.state = .idle
+            self.captureScreenUnderPointer()
+        }
+        holdTimer = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + CaptureController.holdDuration, execute: work)
+    }
+
+    private func cancelHoldCapture() {
+        holdTimer?.cancel()
+        holdTimer = nil
+    }
+
+    private func captureScreenUnderPointer() {
+        let point = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) })
+            ?? NSScreen.main else { return }
+        capture(screen.frame)
+    }
+
     /// Captures the given AppKit-global rect to the clipboard.
     private func capture(_ rect: CGRect) {
         guard rect.width >= 1, rect.height >= 1 else { return }
@@ -182,6 +219,7 @@ final class CaptureController {
     }
 
     private func cancelGesture() {
+        cancelHoldCapture()
         overlay.hide()
         NSCursor.arrow.set()
         state = .idle
