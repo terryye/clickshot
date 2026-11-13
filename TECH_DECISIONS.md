@@ -19,6 +19,13 @@ re-litigated later. See `PRD.md` for the product/feature spec.
   generating `otherMouseDragged` events and freezes the cursor — so the drag
   could never start. We let the down/drag/up flow through and only watch them.
   Side effect: the app under the pointer also receives the click (acceptable).
+- **Middle-button hold (2 s, no drag) captures the display under the pointer.**
+  A timer starts on mouse-down while `armed`; crossing the drag threshold, releasing,
+  or Esc cancels it. When it fires, the `NSScreen` containing the pointer is
+  captured and the gesture returns to `idle` (the eventual release is ignored). A
+  hold rather than a plain click, because button events are observed (not
+  swallowed): every ordinary middle-click (e.g. opening a link in a new tab) would
+  otherwise also take a screenshot and overwrite the clipboard.
 - **Keyboard triggers use an interactive key window**, not the passive tap-driven
   overlay: tapping the hotkey opens `CrosshairSelectionController`, which owns the
   crosshair cursor and the press-drag-release selection. A borderless `NSWindow`
