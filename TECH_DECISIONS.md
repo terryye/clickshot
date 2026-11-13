@@ -60,6 +60,13 @@ re-litigated later. See `PRD.md` for the product/feature spec.
   crop, so a region straddling two monitors is captured from one (spanning capture
   is a non-goal; the off-display part is dropped).
 
+## Clipboard
+
+- **One pasteboard item with multiple types, never multiple items.** PNG and TIFF
+  go on the same `NSPasteboardItem`. Writing them as separate items (e.g.
+  `writeObjects([pngItem, nsImage])`) makes apps that accept multi-item pastes
+  (Slack, Notes, browsers) insert the screenshot twice.
+
 ## Multi-display
 
 - **One overlay window per `NSScreen`, never a single union-spanning window.** With

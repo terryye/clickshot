@@ -2,20 +2,21 @@ import AppKit
 
 /// Writes a captured image to the general pasteboard so it can be pasted anywhere.
 enum ClipboardWriter {
+    /// Writes a **single** pasteboard item carrying both PNG and TIFF. Writing
+    /// them as separate items makes apps that accept multiple items (Slack, Notes,
+    /// browsers, …) paste the screenshot twice.
     static func write(_ image: NSImage) {
+        guard let tiff = image.tiffRepresentation else { return }
+
+        let item = NSPasteboardItem()
+        // PNG first: types are ordered by fidelity/preference.
+        if let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+            item.setData(png, forType: .png)
+        }
+        item.setData(tiff, forType: .tiff)
+
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-
-        var objects: [NSPasteboardWriting] = [image]
-        // Also offer PNG data for apps that prefer it over TIFF.
-        if let tiff = image.tiffRepresentation,
-           let rep = NSBitmapImageRep(data: tiff),
-           let png = rep.representation(using: .png, properties: [:]) {
-            let item = NSPasteboardItem()
-            item.setData(png, forType: .png)
-            objects = [item, image]
-        }
-
-        pasteboard.writeObjects(objects)
+        pasteboard.writeObjects([item])
     }
 }

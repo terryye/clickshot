@@ -85,8 +85,9 @@ clipboard for immediate pasting.
   selection and clamps the region to that display before cropping.
 
 ### 6. Clipboard output
-- Captured image is written to the general pasteboard as both **PNG** and **TIFF**
-  for broad app compatibility. Paste with ⌘V anywhere.
+- Captured image is written to the general pasteboard as a **single item** offering
+  both **PNG** and **TIFF** for broad app compatibility, so it pastes as exactly one
+  image. Paste with ⌘V anywhere.
 
 ### 7. Menu-bar presence & settings
 - Always-visible status-bar item using the custom "Capture C" mark (an open ring
