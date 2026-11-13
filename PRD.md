@@ -54,6 +54,8 @@ clipboard for immediate pasting.
 - Events are **observed, not swallowed**, so the window server keeps generating
   drag events and the cursor stays live (a normal click that never crosses the
   threshold does nothing special).
+- The gesture **never changes focus**: ClickShot is not activated, so the focused
+  window stays focused and open menus/popovers stay open for the capture.
 
 ### 3. Keyboard-shortcut trigger — crosshair capture (macOS-style)
 - **Tap** the configured hotkey → ClickShot enters crosshair mode: the screen

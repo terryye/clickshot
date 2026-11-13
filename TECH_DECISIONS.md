@@ -38,11 +38,16 @@ re-litigated later. See `PRD.md` for the product/feature spec.
 
 ## Cursor
 
-- **Crosshair cursor during a mouse drag** is achieved by activating the app
-  (`NSApp.activate`) on crossing the threshold and calling `NSCursor.crosshair.set()`
-  on each drag event. `CGDisplayHideCursor`/`NSCursor` only affect the foreground
-  app, so a background `.set()` is overridden by the app that owns the pointer;
-  drawing a fake cursor instead lagged and left the real arrow visible.
+- **Crosshair cursor during a mouse drag without activating the app.** `NSCursor`
+  changes from a background app are normally overridden by the app that owns the
+  pointer. We used to `NSApp.activate` on crossing the threshold, but that stole
+  focus from the user's window (and dismisses its open menus/popovers, which are
+  often what's being captured). Instead, `BackgroundCursor` sets the window
+  server's private `SetsCursorInBackground` connection property at startup, and we
+  call `NSCursor.crosshair.set()` on each drag event while staying inactive.
+  Symbols are resolved via `dlsym` so a future OS that removes them only loses the
+  crosshair. Drawing a fake cursor instead lagged and left the real arrow visible.
+  (The keyboard crosshair still activates: it needs a key window for Esc/clicks.)
 
 ## Capture
 

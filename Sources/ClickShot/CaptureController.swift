@@ -35,6 +35,7 @@ final class CaptureController {
         eventTap.onEvent = { [weak self] type, event in
             self?.handle(type: type, event: event) ?? false
         }
+        BackgroundCursor.enable()
         return eventTap.start()
     }
 
@@ -141,10 +142,10 @@ final class CaptureController {
             let distance = hypot(point.x - startPoint.x, point.y - startPoint.y)
             if distance >= threshold {
                 state = .dragging
+                // Deliberately no `NSApp.activate`: that would steal focus from
+                // the app under the pointer (and dismiss its open menus/popovers).
+                // `BackgroundCursor` lets the crosshair below apply while inactive.
                 overlay.show()
-                // Activating makes our cursor change take effect over the app
-                // under the pointer; then the real cursor becomes a crosshair.
-                NSApp.activate(ignoringOtherApps: true)
             }
         }
         if state == .dragging {
